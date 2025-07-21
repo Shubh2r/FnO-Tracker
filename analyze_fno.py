@@ -1,30 +1,37 @@
 import pandas as pd
 import os
+from datetime import date
 
-# Find today's CSV files
-latest_files = [f for f in os.listdir("data") if f.endswith(".csv")]
-for file in latest_files:
-    df = pd.read_csv(os.path.join("data", file))
+# Prepare report folder
+os.makedirs("report", exist_ok=True)
+today = date.today().strftime("%Y-%m-%d")
+summary_lines = [f"# 📊 FnO Report for {today}\n"]
 
-    # Calculate total OI for Calls and Puts
-    total_call_oi = df['CE_OI'].sum() if 'CE_OI' in df.columns else 0
-    total_put_oi = df['PE_OI'].sum() if 'PE_OI' in df.columns else 0
+for file in os.listdir("data"):
+    if file.endswith(".csv") and today in file:
+        df = pd.read_csv(os.path.join("data", file))
 
-    # Put/Call Ratio
-    pcr = round(total_put_oi / total_call_oi, 2) if total_call_oi else "N/A"
+        name = "BankNifty" if "BANKNIFTY" in file else "Nifty"
+        ce_oi = df.get("CE_OI", pd.Series()).sum()
+        pe_oi = df.get("PE_OI", pd.Series()).sum()
+        pcr = round(pe_oi / ce_oi, 2) if ce_oi else "N/A"
 
-    # Get top strike prices by volume
-    if 'CE_TotVol' in df.columns:
-        top_calls = df[['strikePrice', 'CE_TotVol']].sort_values(by='CE_TotVol', ascending=False).head(3)
-        top_puts = df[['strikePrice', 'PE_TotVol']].sort_values(by='PE_TotVol', ascending=False).head(3)
-    else:
-        top_calls = top_puts = pd.DataFrame()
+        summary_lines.append(f"## 📘 {name}")
+        summary_lines.append(f"- 🟦 Call OI: `{ce_oi}`")
+        summary_lines.append(f"- 🔴 Put OI: `{pe_oi}`")
+        summary_lines.append(f"- 🔄 PCR: `{pcr}`")
 
-    print(f"\n📊 Report for: {file}")
-    print(f"🟦 Total Call OI: {total_call_oi}")
-    print(f"🟥 Total Put OI: {total_put_oi}")
-    print(f"📈 PCR: {pcr}")
-    print("🔥 Top Call Strikes:")
-    print(top_calls)
-    print("🔥 Top Put Strikes:")
-    print(top_puts)
+        if "CE_TotVol" in df.columns and "strikePrice" in df.columns:
+            top_calls = df.sort_values("CE_TotVol", ascending=False).head(3)[["strikePrice", "CE_TotVol"]]
+            top_puts = df.sort_values("PE_TotVol", ascending=False).head(3)[["strikePrice", "PE_TotVol"]]
+
+            summary_lines.append("### 🔥 Top Call Strikes by Volume:")
+            for _, row in top_calls.iterrows():
+                summary_lines.append(f"- Strike: `{row['strikePrice']}` → Vol: `{row['CE_TotVol']}`")
+            summary_lines.append("### 🔥 Top Put Strikes by Volume:")
+            for _, row in top_puts.iterrows():
+                summary_lines.append(f"- Strike: `{row['strikePrice']}` → Vol: `{row['PE_TotVol']}`")
+
+# Save report
+with open(f"report/fno_summary_{today}.md", "w") as f:
+    f.write("\n".join(summary_lines))
