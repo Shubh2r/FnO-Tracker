@@ -3,7 +3,6 @@ import pandas as pd
 import datetime
 import os
 
-# Create folder
 os.makedirs("data", exist_ok=True)
 date_str = datetime.date.today().strftime("%Y-%m-%d")
 
@@ -27,3 +26,7 @@ nifty_flat = [flatten(row) for row in nifty_raw]
 
 pd.DataFrame(banknifty_flat).to_csv(f"data/BANKNIFTY_{date_str}.csv", index=False)
 pd.DataFrame(nifty_flat).to_csv(f"data/NIFTY_{date_str}.csv", index=False)
+
+# Backup for trend comparison
+pd.DataFrame(banknifty_flat).to_csv("data/BANKNIFTY_prev.csv", index=False)
+pd.DataFrame(nifty_flat).to_csv("data/NIFTY_prev.csv", index=False)
