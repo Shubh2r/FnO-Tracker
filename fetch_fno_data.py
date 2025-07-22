@@ -1,4 +1,4 @@
-from nsepython import nse_optionchain_scrapper, nse_fno_lot_info
+from nsepython import nse_optionchain_scrapper
 import pandas as pd
 import datetime
 import os
@@ -6,22 +6,21 @@ import os
 # 📁 Create data folder
 os.makedirs("data", exist_ok=True)
 
-# 🗓️ Get today's date
-today = datetime.date.today()
-date_str = today.strftime("%Y-%m-%d")
+# 🗓️ Today's date string
+date_str = datetime.date.today().strftime("%Y-%m-%d")
 
-def extract_flattened_rows(option_data, spot, symbol):
+def extract_flattened_rows(option_data, spot):
     strike = option_data.get("strikePrice")
     expiry = option_data.get("expiryDate")
 
-    # 🎯 Only include strikes within ±1500 of spot
+    # 🎯 Keep only strikes near spot
     if abs(strike - spot) > 1500:
         return None
 
     ce = option_data.get("CE", {})
     pe = option_data.get("PE", {})
 
-    # 🧹 Drop rows with missing identifiers or premiums
+    # 🧹 Skip rows with missing symbols or zero premiums
     if not ce.get("identifier") or not pe.get("identifier"):
         return None
     if ce.get("lastPrice", 0) == 0 and pe.get("lastPrice", 0) == 0:
@@ -42,17 +41,18 @@ def extract_flattened_rows(option_data, spot, symbol):
 
 def fetch_and_save(symbol):
     try:
-        spot_price = nse_fno_lot_info(symbol)["spot_price"]
-        raw_data = nse_optionchain_scrapper(symbol)["records"]["data"]
-        rows = [
-            extract_flattened_rows(row, spot_price, symbol)
-            for row in raw_data
-        ]
-        clean_rows = [r for r in rows if r is not None]
+        chain = nse_optionchain_scrapper(symbol)
+        spot = float(chain["records"]["underlyingValue"])
+        raw = chain["records"]["data"]
+
+        rows = [extract_flattened_rows(row, spot) for row in raw]
+        clean_rows = [r for r in rows if r]
+
         pd.DataFrame(clean_rows).to_csv(f"data/{symbol}_{date_str}.csv", index=False)
-        print(f"✅ Fetched & saved {symbol} data with {len(clean_rows)} clean rows.")
+        print(f"✅ Saved {len(clean_rows)} clean rows for {symbol}")
     except Exception as e:
         print(f"⚠️ Error fetching {symbol}: {e}")
 
+# 🚀 Fetch for both indices
 fetch_and_save("BANKNIFTY")
 fetch_and_save("NIFTY")
