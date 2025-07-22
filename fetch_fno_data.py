@@ -1,4 +1,4 @@
-from nsepython import *
+from nsepython import nse_optionchain_scrapper, nse_fno_lot_info
 import pandas as pd
 import datetime
 import os
