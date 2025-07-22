@@ -50,21 +50,35 @@ for symbol in ["BANKNIFTY", "NIFTY"]:
     top_strike = df_today.sort_values(top_col, ascending=False).iloc[0]["strikePrice"]
 
     trend_data = []
-    for d in recent_dates:
-        path = f"data/{symbol}_{d}.csv"
-        if os.path.exists(path):
-            df = pd.read_csv(path)
-            row = df[df["strikePrice"] == top_strike]
-            if not row.empty:
-                vol = row[top_col].values[0]
-                oi_col = "CE_OI" if pcr < 1 else "PE_OI"
-                oi = row[oi_col].values[0]
-                ltp_col = "CE_LTP" if pcr < 1 else "PE_LTP"
-                ltp = row[ltp_col].values[0]
-                ident_col = "identifier_CE" if pcr < 1 else "identifier_PE"
-                ident = row[ident_col].values[0]
-                expiry = row["expiryDate"].values[0]
-                trend_data.append({"date": d, "vol": vol, "oi": oi, "ltp": ltp, "identifier": ident, "expiry": expiry})
+for d in recent_dates:
+    path = f"data/{symbol}_{d}.csv"
+    if os.path.exists(path):
+        df = pd.read_csv(path)
+        row = df[df["strikePrice"] == top_strike]
+
+        if not row.empty:
+            # 🛡️ Safe access to columns
+            vol = row.get(top_col, pd.Series([0])).values[0]
+
+            oi_col = "CE_OI" if pcr < 1 else "PE_OI"
+            oi = row.get(oi_col, pd.Series([0])).values[0]
+
+            ltp_col = "CE_LTP" if pcr < 1 else "PE_LTP"
+            ltp = row.get(ltp_col, pd.Series([0])).values[0]
+
+            ident_col = "identifier_CE" if pcr < 1 else "identifier_PE"
+            ident = row.get(ident_col, pd.Series([""])).values[0]
+
+            expiry = row.get("expiryDate", pd.Series(["N/A"])).values[0]
+
+            trend_data.append({
+                "date": d,
+                "vol": vol,
+                "oi": oi,
+                "ltp": ltp,
+                "identifier": ident,
+                "expiry": expiry
+            })
 
     # 📈 Analyze trend
     if len(trend_data) >= 3:
