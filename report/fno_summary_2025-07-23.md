@@ -1,12 +1,12 @@
 # 📊 FnO Report for 2025-07-23
 
 ## 📘 BANKNIFTY
-- 🟦 Call OI: `399,009`
-- 🔴 Put OI: `343,838`
-- 🔄 PCR: `0.86`
+- 🟦 Call OI: `368,969`
+- 🔴 Put OI: `332,011`
+- 🔄 PCR: `0.9`
 - ⚠️ Insufficient data for trend analysis.
 ## 📘 NIFTY
-- 🟦 Call OI: `3,424,858`
-- 🔴 Put OI: `3,283,873`
-- 🔄 PCR: `0.96`
+- 🟦 Call OI: `2,927,860`
+- 🔴 Put OI: `3,172,577`
+- 🔄 PCR: `1.08`
 - ⚠️ Insufficient data for trend analysis.
