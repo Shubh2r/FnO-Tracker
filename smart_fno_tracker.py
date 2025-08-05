@@ -5,23 +5,23 @@ import argparse
 import yfinance as yf
 from nsepython import nse_optionchain_scrapper
 
-# 📁 Create folders if they don't exist
+# 📁 Create folders if missing
 os.makedirs("data", exist_ok=True)
 os.makedirs("report", exist_ok=True)
 
-# 📅 Today's and tomorrow's dates
+# 📅 Dates
 today = datetime.date.today()
 tomorrow = today + datetime.timedelta(days=1)
 today_str = today.strftime("%Y-%m-%d")
 tomorrow_str = tomorrow.strftime("%Y-%m-%d")
 
-# 🗂 Mode: evening or morning
+# 🗂 Mode argument
 parser = argparse.ArgumentParser()
 parser.add_argument("--mode", choices=["evening", "morning"], default="evening")
 args = parser.parse_args()
 MODE = args.mode
 
-# 📈 Global Market Sentiment
+# 📈 Fetch global indices
 def fetch_global_indices():
     indices = {
         "Dow": "^DJI",
@@ -32,7 +32,7 @@ def fetch_global_indices():
     summary = {}
     for name, ticker in indices.items():
         try:
-            data = yf.download(ticker, period="2d", interval="1d", progress=False)
+            data = yf.download(ticker, period="2d", interval="1d", progress=False, auto_adjust=False)
             if data.empty or len(data) < 2:
                 summary[name] = {"error": "Insufficient data"}
                 continue
@@ -43,7 +43,7 @@ def fetch_global_indices():
             summary[name] = {"error": str(e)}
     return summary
 
-# 🔍 FnO Data Extraction
+# 🔍 Extract FnO data rows
 def extract_flattened_rows(option_data, spot):
     strike = option_data.get("strikePrice")
     expiry = option_data.get("expiryDate")
@@ -77,7 +77,7 @@ def extract_flattened_rows(option_data, spot):
         "PE_LTP": pe.get("lastPrice", 0)
     }
 
-# 📦 Fetch and Save Data
+# 📦 Fetch and save data
 def fetch_and_save(symbol):
     try:
         chain = nse_optionchain_scrapper(symbol)
@@ -92,7 +92,7 @@ def fetch_and_save(symbol):
     except Exception as e:
         print(f"⚠️ Error fetching {symbol}: {e}")
 
-# 🧠 Analyze and Recommend
+# 🧠 Analyze and suggest trades
 def analyze(symbol, global_data):
     date_to_use = tomorrow_str if MODE == "evening" else today_str
     filename = f"data/{symbol}_{date_to_use}.csv"
@@ -120,8 +120,19 @@ def analyze(symbol, global_data):
     target = round(entry * 1.5, 2)
     stop = round(entry * 0.7, 2)
 
-    global_sentiment = sum([v.get("change", 0) for v in global_data.values() if isinstance(v, dict)])
-    tag = "✅ Confirmed" if MODE == "morning" and global_sentiment > 0 else "⚠️ Global Risk" if global_sentiment < 0 else "🔍 Prelim"
+    try:
+        sentiment_float = sum(
+            float(v.get("change", 0)) for v in global_data.values()
+            if isinstance(v, dict) and "change" in v
+        )
+    except:
+        sentiment_float = 0
+
+    tag = (
+        "✅ Confirmed" if MODE == "morning" and sentiment_float > 0
+        else "⚠️ Global Risk" if sentiment_float < 0
+        else "🔍 Prelim"
+    )
 
     return [
         f"## 📘 {symbol} ({MODE.capitalize()} Mode)",
@@ -132,11 +143,11 @@ def analyze(symbol, global_data):
         f"- 💰 Entry: ₹{entry}",
         f"- 🎯 Target: ₹{target}",
         f"- ⛔ Stop-Loss: ₹{stop}",
-        f"- 🌐 Global Sentiment: `{global_sentiment}`",
+        f"- 🌐 Global Sentiment: `{sentiment_float}`",
         f"### Trade Signal: {tag} ⇒ `{'Call' if pcr < 1 else 'Put'}` Option"
     ]
 
-# 📝 Generate Report
+# 📑 Generate markdown report
 def generate_report():
     global_data = fetch_global_indices()
     date_to_use = tomorrow_str if MODE == "evening" else today_str
@@ -156,7 +167,7 @@ def generate_report():
         f.write("\n".join(summary_lines))
     print(f"📝 Report saved as {file_name}")
 
-# 🚀 Execution with Error Logging
+# 🚀 Final execution block with error trace
 if __name__ == "__main__":
     import traceback
     try:
