@@ -5,23 +5,23 @@ import argparse
 import yfinance as yf
 from nsepython import nse_optionchain_scrapper
 
-# 📁 Create folders
+# 📁 Create folders if they don't exist
 os.makedirs("data", exist_ok=True)
 os.makedirs("report", exist_ok=True)
 
-# 📅 Today and tomorrow
+# 📅 Today's and tomorrow's dates
 today = datetime.date.today()
 tomorrow = today + datetime.timedelta(days=1)
 today_str = today.strftime("%Y-%m-%d")
 tomorrow_str = tomorrow.strftime("%Y-%m-%d")
 
-# 🗂 Configurable Mode
+# 🗂 Mode: evening or morning
 parser = argparse.ArgumentParser()
 parser.add_argument("--mode", choices=["evening", "morning"], default="evening")
 args = parser.parse_args()
 MODE = args.mode
 
-# 📈 Global Index Tracker
+# 📈 Global Market Sentiment
 def fetch_global_indices():
     indices = {
         "Dow": "^DJI",
@@ -33,6 +33,9 @@ def fetch_global_indices():
     for name, ticker in indices.items():
         try:
             data = yf.download(ticker, period="2d", interval="1d", progress=False)
+            if data.empty or len(data) < 2:
+                summary[name] = {"error": "Insufficient data"}
+                continue
             change = round(data["Close"].iloc[-1] - data["Close"].iloc[-2], 2)
             pct = round((change / data["Close"].iloc[-2]) * 100, 2)
             summary[name] = {"change": change, "percent": pct}
@@ -40,11 +43,10 @@ def fetch_global_indices():
             summary[name] = {"error": str(e)}
     return summary
 
-# 📊 Fetch NSE FnO data
+# 🔍 FnO Data Extraction
 def extract_flattened_rows(option_data, spot):
     strike = option_data.get("strikePrice")
     expiry = option_data.get("expiryDate")
-
     ce = option_data.get("CE", {})
     pe = option_data.get("PE", {})
 
@@ -75,6 +77,7 @@ def extract_flattened_rows(option_data, spot):
         "PE_LTP": pe.get("lastPrice", 0)
     }
 
+# 📦 Fetch and Save Data
 def fetch_and_save(symbol):
     try:
         chain = nse_optionchain_scrapper(symbol)
@@ -83,16 +86,16 @@ def fetch_and_save(symbol):
 
         rows = [extract_flattened_rows(row, spot) for row in raw]
         clean_rows = [r for r in rows if r]
-
         date_save = tomorrow_str if MODE == "evening" else today_str
         pd.DataFrame(clean_rows).to_csv(f"data/{symbol}_{date_save}.csv", index=False)
         print(f"✅ Saved {len(clean_rows)} rows for {symbol} ({MODE})")
     except Exception as e:
         print(f"⚠️ Error fetching {symbol}: {e}")
 
-# 🧠 Analyze and Recommend Trades
+# 🧠 Analyze and Recommend
 def analyze(symbol, global_data):
-    filename = f"data/{symbol}_{tomorrow_str if MODE == 'evening' else today_str}.csv"
+    date_to_use = tomorrow_str if MODE == "evening" else today_str
+    filename = f"data/{symbol}_{date_to_use}.csv"
     if not os.path.exists(filename):
         return [f"⚠️ {symbol} data not available. Skipping..."]
 
@@ -117,7 +120,7 @@ def analyze(symbol, global_data):
     target = round(entry * 1.5, 2)
     stop = round(entry * 0.7, 2)
 
-    global_sentiment = sum([v["change"] for k, v in global_data.items() if isinstance(v, dict) and "change" in v])
+    global_sentiment = sum([v.get("change", 0) for v in global_data.values() if isinstance(v, dict)])
     tag = "✅ Confirmed" if MODE == "morning" and global_sentiment > 0 else "⚠️ Global Risk" if global_sentiment < 0 else "🔍 Prelim"
 
     return [
@@ -133,11 +136,12 @@ def analyze(symbol, global_data):
         f"### Trade Signal: {tag} ⇒ `{'Call' if pcr < 1 else 'Put'}` Option"
     ]
 
-# 📝 Generate Final Report
+# 📝 Generate Report
 def generate_report():
     global_data = fetch_global_indices()
-    summary_lines = [f"# 📊 FnO Tracker Report – {tomorrow_str if MODE == 'evening' else today_str}"]
-    
+    date_to_use = tomorrow_str if MODE == "evening" else today_str
+    summary_lines = [f"# 📊 FnO Tracker Report – {date_to_use}"]
+
     for name, vals in global_data.items():
         if "error" in vals:
             summary_lines.append(f"- ⚠️ {name}: `{vals['error']}`")
@@ -147,12 +151,18 @@ def generate_report():
     for symbol in ["BANKNIFTY", "NIFTY"]:
         summary_lines += analyze(symbol, global_data)
 
-    file_name = f"report/fno_{MODE}_report_{tomorrow_str if MODE == 'evening' else today_str}.md"
+    file_name = f"report/fno_{MODE}_report_{date_to_use}.md"
     with open(file_name, "w") as f:
         f.write("\n".join(summary_lines))
     print(f"📝 Report saved as {file_name}")
 
-# 🚦 Execution Flow
-fetch_and_save("BANKNIFTY")
-fetch_and_save("NIFTY")
-generate_report()
+# 🚀 Execution with Error Logging
+if __name__ == "__main__":
+    import traceback
+    try:
+        fetch_and_save("BANKNIFTY")
+        fetch_and_save("NIFTY")
+        generate_report()
+    except Exception:
+        traceback.print_exc()
+        exit(1)
