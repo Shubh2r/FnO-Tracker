@@ -10,7 +10,7 @@ os.makedirs("report", exist_ok=True)
 def get_recent_dates(n=6):
     dates, d = [], today - timedelta(days=1)
     while len(dates) < n:
-        if d.weekday() < 5:
+        if d.weekday() < 5:  # Skip weekends
             dates.append(d.strftime("%Y-%m-%d"))
         d -= timedelta(days=1)
     return dates[::-1]
@@ -27,6 +27,7 @@ recent_dates = get_recent_dates()
 for symbol in ["BANKNIFTY", "NIFTY"]:
     path_today = f"data/{symbol}_{today_str}.csv"
     if not os.path.exists(path_today):
+        summary_lines.append(f"⚠️ Missing file: `{path_today}`\n")
         continue
 
     df = pd.read_csv(path_today)
@@ -97,6 +98,6 @@ for symbol in ["BANKNIFTY", "NIFTY"]:
     else:
         summary_lines.append(f"- ⚠️ Insufficient data for trend analysis.")
 
-# Save markdown report
+# Save markdown summary
 with open(f"report/fno_summary_{today_str}.md", "w") as f:
     f.write("\n".join(summary_lines))
