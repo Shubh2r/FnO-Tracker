@@ -7,7 +7,8 @@ import os
 os.makedirs("data", exist_ok=True)
 
 # 🗓️ Today's date string
-date_str = datetime.date.today().strftime("%Y-%m-%d")
+today = datetime.date.today()
+date_str = today.strftime("%Y-%m-%d")
 
 def extract_flattened_rows(option_data, spot):
     strike = option_data.get("strikePrice")
@@ -17,13 +18,21 @@ def extract_flattened_rows(option_data, spot):
     if abs(strike - spot) > 1500:
         return None
 
+    # 🧹 Skip rows with missing symbols or zero premiums
     ce = option_data.get("CE", {})
     pe = option_data.get("PE", {})
 
-    # 🧹 Skip rows with missing symbols or zero premiums
     if not ce.get("identifier") or not pe.get("identifier"):
         return None
     if ce.get("lastPrice", 0) == 0 and pe.get("lastPrice", 0) == 0:
+        return None
+
+    # 📅 Filter out expired contracts
+    try:
+        exp_date = datetime.datetime.strptime(expiry, "%d-%b-%Y").date()
+        if exp_date < today:
+            return None
+    except:
         return None
 
     return {
@@ -51,6 +60,12 @@ def fetch_and_save(symbol):
         pd.DataFrame(clean_rows).to_csv(f"data/{symbol}_{date_str}.csv", index=False)
         print(f"✅ Saved {len(clean_rows)} clean rows for {symbol}")
     except Exception as e:
+        print(f"⚠️ Error fetching {symbol}: {e}")
+
+# 🚀 Fetch for both indices
+fetch_and_save("BANKNIFTY")
+fetch_and_save("NIFTY")
+
         print(f"⚠️ Error fetching {symbol}: {e}")
 
 # 🚀 Fetch for both indices
