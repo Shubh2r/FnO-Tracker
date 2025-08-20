@@ -15,27 +15,27 @@ dtype: float64` (Ticker
 ^GSPC   -0.59
 dtype: float64%)
 - 🌐 SGX Nifty: Change `Ticker
-^NSEI    103.7
+^NSEI    57.1
 dtype: float64` (Ticker
-^NSEI    0.42
+^NSEI    0.23
 dtype: float64%)
 ## 📘 BANKNIFTY (Morning Mode)
-- 📈 PCR: `0.94`
+- 📈 PCR: `0.87`
 - 🔢 Top Strike: `56000`
 - 📆 Expiry: `28-Aug-2025`
 - 🎫 Symbol: `OPTIDXBANKNIFTY28-08-2025CE56000.00`
-- 💰 Entry: ₹345.1
-- 🎯 Target: ₹517.65
-- ⛔ Stop-Loss: ₹241.57
-- 🌐 Global Sentiment: `-238.45`
+- 💰 Entry: ₹268.2
+- 🎯 Target: ₹402.3
+- ⛔ Stop-Loss: ₹187.74
+- 🌐 Global Sentiment: `-285.04999999999995`
 ### Trade Signal: ⚠️ Global Risk ⇒ `Call` Option
 ## 📘 NIFTY (Morning Mode)
-- 📈 PCR: `1.1`
-- 🔢 Top Strike: `24900`
+- 📈 PCR: `1.16`
+- 🔢 Top Strike: `25000`
 - 📆 Expiry: `21-Aug-2025`
-- 🎫 Symbol: `OPTIDXNIFTY21-08-2025PE24900.00`
-- 💰 Entry: ₹37.75
-- 🎯 Target: ₹56.62
-- ⛔ Stop-Loss: ₹26.42
-- 🌐 Global Sentiment: `-238.45`
+- 🎫 Symbol: `OPTIDXNIFTY21-08-2025PE25000.00`
+- 💰 Entry: ₹48.95
+- 🎯 Target: ₹73.43
+- ⛔ Stop-Loss: ₹34.26
+- 🌐 Global Sentiment: `-285.04999999999995`
 ### Trade Signal: ⚠️ Global Risk ⇒ `Put` Option
