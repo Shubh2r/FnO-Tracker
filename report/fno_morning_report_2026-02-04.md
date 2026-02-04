@@ -1,0 +1,23 @@
+# 📊 FnO Tracker Report – 2026-02-04
+- 🌐 Dow: Change `Ticker
+^DJI   -166.67
+dtype: float64` (Ticker
+^DJI   -0.34
+dtype: float64%)
+- 🌐 Nasdaq: Change `Ticker
+^IXIC   -336.92
+dtype: float64` (Ticker
+^IXIC   -1.43
+dtype: float64%)
+- 🌐 S&P 500: Change `Ticker
+^GSPC   -58.63
+dtype: float64` (Ticker
+^GSPC   -0.84
+dtype: float64%)
+- 🌐 SGX Nifty: Change `Ticker
+^NSEI    61.65
+dtype: float64` (Ticker
+^NSEI    0.24
+dtype: float64%)
+⚠️ BANKNIFTY data not available. Skipping...
+⚠️ NIFTY data not available. Skipping...
